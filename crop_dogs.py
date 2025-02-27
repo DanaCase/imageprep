@@ -34,6 +34,38 @@ def resize_and_pad(image, size=512, pad_color=(0, 0, 0)):
     return padded
 
 
+def expand_yolo_box(yolo_box, img_width, img_height, expansion_factor=1.2):
+    """
+    Expand YOLO bounding box slightly to ensure the full cat is captured,
+    while maintaining a square shape and keeping it within image bounds.
+
+    :param yolo_box: A single YOLO box object (assumed format [x_center, y_center, width, height])
+    :param img_width: Width of the image
+    :param img_height: Height of the image
+    :param expansion_factor: Factor by which to expand the bounding box size (default 1.2 means 20% larger)
+    :return: (x1, y1, x2, y2) coordinates of the expanded square box
+    """
+    # Convert YOLO tensor to float values
+    x_center, y_center, width, height = yolo_box.xywh[0].tolist()
+
+    # Find the max dimension to make the box square
+    max_size = max(width, height) * expansion_factor  # Expand box size
+
+    # Ensure the expanded square fits within the image dimensions
+    max_size = min(max_size, min(x_center, img_width - x_center) * 2, min(y_center, img_height - y_center) * 2)
+
+    # Compute new square box coordinates
+    x1 = x_center - max_size / 2
+    y1 = y_center - max_size / 2
+    x2 = x_center + max_size / 2
+    y2 = y_center + max_size / 2
+
+    # Ensure the box stays within image boundaries
+    x1, y1, x2, y2 = map(int, [max(0, x1), max(0, y1), min(img_width, x2), min(img_height, y2)])
+
+    return x1, y1, x2, y2
+
+
 def make_yolo_box_square(yolo_box, img_width, img_height):
     """
     Convert a YOLO bounding box to a square while keeping it centered.
@@ -110,7 +142,7 @@ if __name__ == "__main__":
                       
                         print(img.shape)
                         h, w, _ = img.shape
-                        x1, y1, x2, y2 = make_yolo_box_square(box, w, h)
+                        x1, y1, x2, y2 = expand_yolo_box(box, w, h)
                         
                         print(x1, y1, x2, y2)
                         # Crop image
