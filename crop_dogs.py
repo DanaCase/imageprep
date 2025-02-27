@@ -5,20 +5,12 @@ from ultralytics import YOLO
 from pillow_heif import register_heif_opener
 from PIL import Image
 import numpy as np
+import argparse
 
-# Register HEIC support in PIL
-register_heif_opener()
-
-# Load the YOLOv8 model (pretrained on COCO dataset, which includes dogs)
-model = YOLO("yolov8n.pt")
-
-# Define the input and output directories
-input_folder = "/Users/danacase/code/data/Mousse Unmodified"  # Change this
-output_folder = "/Users/danacase/code/data/MousseCroppedSquare"  # Change this
-
-# Ensure the output folder exists
-os.makedirs(output_folder, exist_ok=True)
-
+typemap = {
+        "dog": 16,
+        "cat": 17
+        }
 
 def resize_and_pad(image, size=512, pad_color=(0, 0, 0)):
     """ Resize and pad an image to keep aspect ratio while fitting into (size x size). """
@@ -76,50 +68,71 @@ def make_yolo_box_square(yolo_box, img_width, img_height):
     return int(x1), int(y1), int(x2), int(y2)
 
 
+if __name__ == "__main__":
+    argparse = argparse.ArgumentParser(
+            description="Crop class from iPhotos input images")
+    
+    argparse.add_argument("--input_folder", type=str, required=True)
+    argparse.add_argument("--output_folder", type=str, required=True)
+    argparse.add_argument("--image_category", type=str, default="dog")
+    args = argparse.parse_args()
+    input_folder = args.input_folder
+    output_folder = args.output_folder
+    img_class = typemap[args.image_category]
+
+# Register HEIC support in PIL
+    register_heif_opener()
+
+# Load the YOLOv8 model (pretrained on COCO dataset, which includes dogs)
+    model = YOLO("yolov8n.pt")
+
+# Ensure the output folder exists
+    os.makedirs(output_folder, exist_ok=True)
+
 
 # Process each image
-for image_path in glob.glob(os.path.join(input_folder, "*.*")):
-    try:
-        # Check if the file is HEIC
-        if image_path.lower().endswith(".heic"):
-            # Convert HEIC to a format OpenCV can read (JPEG)
-            img_pil = Image.open(image_path).convert("RGB")
-            image_path_jpg = image_path.replace(".heic", ".jpg")
-            img_pil.save(image_path_jpg, "JPEG")
-            image_path = image_path_jpg  # Use the converted file
+    for image_path in glob.glob(os.path.join(input_folder, "*.*")):
+        try:
+            # Check if the file is HEIC
+            if image_path.lower().endswith(".heic"):
+                # Convert HEIC to a format OpenCV can read (JPEG)
+                img_pil = Image.open(image_path).convert("RGB")
+                image_path_jpg = image_path.replace(".heic", ".jpg")
+                img_pil.save(image_path_jpg, "JPEG")
+                image_path = image_path_jpg  # Use the converted file
 
-        # Read image
-        img = cv2.imread(image_path)
+            # Read image
+            img = cv2.imread(image_path)
 
-        # Run YOLO detection
-        results = model.predict(source=image_path, save=False)
+            # Run YOLO detection
+            results = model.predict(source=image_path, save=False)
 
-        for r in results:
-            for box in r.boxes:
-                cls = int(box.cls.item())  # Get class index
-                if cls == 16:  # Class 16 = "dog" in COCO dataset
-                   # x1, y1, x2, y2 = map(int, box.xyxy[0])  # Get bounding box
-                  
-                    print(img.shape)
-                    h, w, _ = img.shape
-                    x1, y1, x2, y2 = make_yolo_box_square(box, w, h)
-                    
-                    print(x1, y1, x2, y2)
-                    # Crop image
-                    cropped = img[y1:y2, x1:x2]
+            for r in results:
+                for box in r.boxes:
+                    cls = int(box.cls.item())  # Get class index
+                    if cls == img_class:  # Class 16 = "dog" in COCO dataset
+                       # x1, y1, x2, y2 = map(int, box.xyxy[0])  # Get bounding box
+                      
+                        print(img.shape)
+                        h, w, _ = img.shape
+                        x1, y1, x2, y2 = make_yolo_box_square(box, w, h)
+                        
+                        print(x1, y1, x2, y2)
+                        # Crop image
+                        cropped = img[y1:y2, x1:x2]
 
-                    print("got to here")
-                    # final_image = resize_and_pad(cropped, size=512, pad_color=(0, 0, 0))  # Black padding
+                        print("got to here")
+                        # final_image = resize_and_pad(cropped, size=512, pad_color=(0, 0, 0))  # Black padding
 
-                    # Save as JPEG instead of HEIC
-                    filename = os.path.basename(image_path).lower().replace(".heic", ".jpg")
-                    output_path = os.path.join(output_folder, f"cropped_{filename}")
-                    # cv2.imwrite(output_path, final_image)
-                    cv2.imwrite(output_path, cropped)
-                    print(f"Saved cropped dog: {output_path}")
+                        # Save as JPEG instead of HEIC
+                        filename = os.path.basename(image_path).lower().replace(".heic", ".jpg")
+                        output_path = os.path.join(output_folder, f"cropped_{filename}")
+                        # cv2.imwrite(output_path, final_image)
+                        cv2.imwrite(output_path, cropped)
+                        print(f"Saved cropped dog: {output_path}")
 
-    except Exception as e:
-        print(f"Error processing {image_path}: {e}")
+        except Exception as e:
+            print(f"Error processing {image_path}: {e}")
 
-print("Processing complete!")
+    print("Processing complete!")
 
