@@ -18,9 +18,10 @@ if __name__ == "__main__":
     processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
     model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large")
 
-    image_paths = itertools.chain(
+    image_paths = sorted(itertools.chain(
         glob.glob(os.path.join(args.image_folder, "*.jpg")),
         glob.glob(os.path.join(args.image_folder, "*.jpeg"))
+        )
     )
 
     # Process Each Image
