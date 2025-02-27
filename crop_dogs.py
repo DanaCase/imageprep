@@ -9,7 +9,7 @@ import argparse
 
 typemap = {
         "dog": 16,
-        "cat": 17
+        "cat": 15
         }
 
 def resize_and_pad(image, size=512, pad_color=(0, 0, 0)):
@@ -37,6 +37,7 @@ def resize_and_pad(image, size=512, pad_color=(0, 0, 0)):
 def make_yolo_box_square(yolo_box, img_width, img_height):
     """
     Convert a YOLO bounding box to a square while keeping it centered.
+    If the square exceeds image boundaries, it is resized to fit within the image.
 
     :param yolo_box: A single YOLO box object (assumed format [x_center, y_center, width, height])
     :param img_width: Width of the image
@@ -44,27 +45,21 @@ def make_yolo_box_square(yolo_box, img_width, img_height):
     :return: (x1, y1, x2, y2) coordinates of the square box
     """
     # Convert YOLO tensor to float values
-    x_center, y_center, width, height = yolo_box.xywh[0].tolist()  # Ensure values are floats
+    x_center, y_center, width, height = yolo_box.xywh[0].tolist()
 
     # Find the max dimension to make the box square
     max_size = max(width, height)
 
+    # Ensure the square fits within the image dimensions
+    max_size = min(max_size, min(x_center, img_width - x_center) * 2, min(y_center, img_height - y_center) * 2)
+
     # Compute new square box coordinates
-    new_width = new_height = max_size
+    x1 = x_center - max_size / 2
+    y1 = y_center - max_size / 2
+    x2 = x_center + max_size / 2
+    y2 = y_center + max_size / 2
 
-    # Adjust x1, y1, x2, y2
-    x1 = x_center - new_width / 2
-    y1 = y_center - new_height / 2
-    x2 = x_center + new_width / 2
-    y2 = y_center + new_height / 2
-
-    # Ensure the box stays within image boundaries
-    x1 = max(0, x1)
-    y1 = max(0, y1)
-    x2 = min(img_width, x2)
-    y2 = min(img_height, y2)
-
-    # Explicitly convert to integers to avoid OpenCV slicing issues
+    # Explicitly convert to integers
     return int(x1), int(y1), int(x2), int(y2)
 
 
