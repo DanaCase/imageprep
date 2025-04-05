@@ -2,6 +2,7 @@
 authors = [{name = "Dana Case", email = "case.danal@gmail.com"}]
 name = "imageprep"
 version = "0.1.0"
+dependencies = ["pillow-heif>=0.22.0,<0.23"]
 
 [build-system]
 requires = ["setuptools"]
@@ -18,9 +19,8 @@ pillow = ">=11.1.0,<12"
 numpy = ">=2.2.4,<3"
 python = "*"
 libheif = ">=1.14.0,<2"
-pillow_heif = "*"
 
-[tool.pixi.pypi-options]
-# Will build detectron2 and fvcore without isolation
-# in the default environment
-no-build-isolation = ["pillow_heif"]
+[tool.pixi.dependencies]
+pillow = ">=11.1.0,<12"
+setuptools = "*"
+libheif = "*"
