@@ -1,0 +1,12 @@
+[project]
+authors = ["Dana Case <case.danal@gmail.com>"]
+channels = ["conda-forge"]
+name = "imageprep"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+pillow = ">=11.1.0,<12"
+numpy = ">=2.2.4,<3"
