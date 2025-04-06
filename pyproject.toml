@@ -12,15 +12,33 @@ build-backend = "setuptools.build_meta"
 channels = ["conda-forge"]
 platforms = ["osx-arm64"]
 
-[tasks]
-
 [dependencies]
 pillow = ">=11.1.0,<12"
 numpy = ">=2.2.4,<3"
 python = "*"
 libheif = ">=1.14.0,<2"
 
+[dependency-groups]
+captions = ["torch"]
+
 [tool.pixi.dependencies]
 pillow = ">=11.1.0,<12"
 setuptools = "*"
 libheif = "*"
+
+[tool.pixi.feature.captions]
+tasks = {caption = "python src/captions/captionsui.py"}
+pypi-dependencies = {}
+
+
+[tool.pixi.feature.captions.dependencies]
+transformers = "*"
+torchvision = "*"
+
+[tool.pixi.environments]
+captions = ["captions"]
+
+[tool.pixi.tasks]
+captions = "python src/captions/captionsui.py"
+
+
